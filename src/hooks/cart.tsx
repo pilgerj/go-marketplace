@@ -30,28 +30,60 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      const itens = await AsyncStorage.getItem(
+        '@GoMarket:cartItens'
+      );
+
+      if (itens){
+        setProducts([...JSON.parse(itens)])
+      }  
     }
 
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
-  }, []);
+  const addToCart = useCallback(async (product: Product) => {
+      const hasProduct = products.find( p => p.id === product.id);
+      
+      if (hasProduct){
+        setProducts( products.map( p => 
+          p.id === product.id ? {...product, quantity: p.quantity + 1}
+                              : p,
+        ));
+      } else {
+        setProducts([...products, {...product, quantity: 1}]);
+      }
+
+      saveItensAsyncStorage(); 
+  }, [products]);
 
   const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+    setProducts( products.map( p => p.id === id ? {...p, quantity: p.quantity + 1}: p));
+
+    saveItensAsyncStorage();
+  }, [products]);
 
   const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+    const decreItem = products.find( p => p.id === id);
+    if(decreItem !== undefined && decreItem?.quantity > 1){
+      setProducts( products.map( p => p.id === id ? {...p, quantity: p.quantity - 1 } : p))
+    } else {
+      const listWithoutDecreItem = products.filter( p => p.id !== id);
+      setProducts(listWithoutDecreItem);
+    }
+    saveItensAsyncStorage(); 
+  }, [products]);
 
   const value = React.useMemo(
     () => ({ addToCart, increment, decrement, products }),
     [products, addToCart, increment, decrement],
   );
+
+  async function saveItensAsyncStorage(){
+      await AsyncStorage.setItem(
+        '@GoMarket:cartItens', JSON.stringify(products)
+      );
+  }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
